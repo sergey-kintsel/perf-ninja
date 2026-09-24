@@ -17,7 +17,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "")
 endif()
 
 if(NOT DEFINED CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 23)
 endif()
 
 # Set compiler options
