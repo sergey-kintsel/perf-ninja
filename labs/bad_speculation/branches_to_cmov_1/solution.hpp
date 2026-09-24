@@ -6,6 +6,19 @@ constexpr int GridXDimension = 1024;
 constexpr int GridYDimension = 1024;
 constexpr int NumberOfSims = 10;
 
+// baseline
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bench1            688 ms          688 ms            1
+
+
+// with __builtin_unpredictable
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bench1            174 ms          174 ms            3
+
 class Life {
 
 public:
@@ -62,25 +75,10 @@ public:
                 // its neighbours as it was counted before
                 aliveNeighbours -= current[i][j];
 
-                // Implementing the Rules of Life:
-                switch(aliveNeighbours) {
-                    // 1. Cell is lonely and dies
-                    case 0:
-                    case 1:
-                        future[i][j] = 0;
-                        break;                   
-                    // 2. Remains the same
-                    case 2:
-                        future[i][j] = current[i][j];
-                        break;
-                    // 3. A new cell is born
-                    case 3:
-                        future[i][j] = 1;
-                        break;
-                    // 4. Cell dies due to over population
-                    default:
-                        future[i][j] = 0;
-                }
+                future[i][j] =
+                    __builtin_unpredictable(aliveNeighbours == 2)
+                        ? current[i][j]
+                        : aliveNeighbours == 3;
             }
         }
         std::swap(current, future);
