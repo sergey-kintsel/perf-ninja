@@ -5,16 +5,29 @@ constexpr int N = 1000000;
 constexpr int minRandom = 0;
 constexpr int maxRandom = 100;
 
-// FIXME: this data structure can be reduced in size
-struct S {
-  int i;
-  long long l;
-  short s;
-  double d;
-  bool b;
+// baseline
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bench1           22.1 ms         22.1 ms           28
 
-  bool operator<(const S &s) const { return this->i < s.i; }
+// with bitfields
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bench1           3.61 ms         3.61 ms          195
+
+struct S {
+  unsigned i:7;
+  unsigned s:7;
+  unsigned l:14;
+  bool b:1;
+  float d;
+
+  bool operator<(const S &_s) const { return this->i < _s.i; }
 };
+
+static_assert(sizeof(S) == 8, "S is too big");
 
 void init(std::vector<S> &arr);
 S create_entry(int first_value, int second_value);
