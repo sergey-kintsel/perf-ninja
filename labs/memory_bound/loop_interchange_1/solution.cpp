@@ -3,6 +3,18 @@
 #include <memory>
 #include <string_view>
 
+// baseline
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bench1      458215765 ns    457655431 ns            2
+
+// flipped loops
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bench1       29478045 ns     29470893 ns           22
+
 // Make zero matrix
 void zero(Matrix &result) {
   for (int i = 0; i < N; i++) {
@@ -27,8 +39,8 @@ void multiply(Matrix &result, const Matrix &a, const Matrix &b) {
   zero(result);
 
   for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
-      for (int k = 0; k < N; k++) {
+    for (int k = 0; k < N; k++) {
+      for (int j = 0; j < N; j++) {
         result[i][j] += a[i][k] * b[k][j];
       }
     }
@@ -66,5 +78,5 @@ Matrix power(const Matrix &input, const uint32_t k) {
     std::swap(elementNext, elementCurrent);
   }
 
-  return std::move(*productCurrent);
+  return *productCurrent;
 }
