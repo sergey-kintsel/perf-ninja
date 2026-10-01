@@ -1,25 +1,59 @@
 
 #include "solution.h"
 #include <algorithm>
-#include <fstream>
-#include <stdint.h>
 #include <cmath>
+#include <fstream>
 #include <ios>
+#include <stdint.h>
+
+// baseline
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bird/0           35.1 us         35.1 us        18615
+// coins/1          17.9 us         17.9 us        38600
+// pepper/2         12.2 us         12.2 us        57468
+// pixabay/3        5.34 ms         5.34 ms          131
+
+
+// with 4 separate accumulators
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bird/0           24.6 us         24.6 us        26549
+// coins/1          12.5 us         12.5 us        56227
+// pepper/2         10.1 us         10.1 us        69166
+// pixabay/3        4.51 ms         4.51 ms          155
 
 // ******************************************
 // ONLY THE FOLLOWING FUNCTION IS BENCHMARKED
 // Compute the histogram of image pixels
-std::array<uint32_t, 256> computeHistogram(const GrayscaleImage& image) {
-  std::array<uint32_t, 256> hist;
-  hist.fill(0);
-  for (int i = 0; i < image.width * image.height; ++i)
-    hist[image.data[i]]++;
-  return hist;
+std::array<uint32_t, 256> computeHistogram(const GrayscaleImage &image) {
+  std::array<std::array<uint32_t, 256>, 4> hists{};
+  for (auto &hist : hists) {
+    hist.fill(0);
+  }
+
+  int i = 0;
+  for (; i + 4 < image.width * image.height; i += 4) {
+    hists[0][image.data[i]]++;
+    hists[1][image.data[i + 1]]++;
+    hists[2][image.data[i + 2]]++;
+    hists[3][image.data[i + 3]]++;
+  }
+  for (; i < image.width * image.height; ++i) {
+    hists[i % hists.size()][image.data[i]]++;
+  }
+
+  for (i = 0; i < hists[0].size(); ++i) {
+    hists[0][i] += hists[1][i] + hists[2][i] + hists[3][i];
+  }
+  return hists[0];
 }
 // ******************************************
 
 // Calculate Otsu's Threshold
-int calcOtsuThreshold(const std::array<uint32_t, 256>& hist, int totalPixels) {
+int calcOtsuThreshold(const std::array<uint32_t, 256> &hist, int totalPixels) {
   // normalize histogram
   std::array<double, 256> normHist;
   for (int i = 0; i < 256; ++i)
@@ -42,7 +76,8 @@ int calcOtsuThreshold(const std::array<uint32_t, 256>& hist, int totalPixels) {
       mean2 += i * normHist[i];
     }
 
-    if (weight1 == 0 || weight2 == 0) continue;
+    if (weight1 == 0 || weight2 == 0)
+      continue;
 
     mean1 /= weight1;
     mean2 /= weight2;
@@ -59,7 +94,7 @@ int calcOtsuThreshold(const std::array<uint32_t, 256>& hist, int totalPixels) {
 }
 
 // Function to apply the threshold to create a binary image
-void applyOtsuThreshold(GrayscaleImage& image) {
+void applyOtsuThreshold(GrayscaleImage &image) {
   // Compute the histogram
   std::array<uint32_t, 256> hist = computeHistogram(image);
   auto totalPixels = image.height * image.width;
@@ -70,7 +105,7 @@ void applyOtsuThreshold(GrayscaleImage& image) {
 }
 
 // Loads GrayscaleImage image. Format is
-// https://people.sc.fsu.edu/~jburkardt/data/pgmb/pgmb.html 
+// https://people.sc.fsu.edu/~jburkardt/data/pgmb/pgmb.html
 bool GrayscaleImage::load(const std::string &filename, const int maxSize) {
   data.reset();
 
