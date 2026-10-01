@@ -1,7 +1,49 @@
-#include <vector>
-#include <iostream>
-#include <cstdint>
 #include <array>
+#include <cstdint>
+#include <iostream>
+#include <vector>
+
+// baseline
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bench1           10.9 ms         10.9 ms           64
+
+// with precompute of angles
+// std::array<float, 4> angles;
+// for (int i = 0; i < STEPS; i++) {
+//   if (i % angles.size() == 0) {
+//     for (size_t j{}; j < angles.size(); ++j) {
+//       angles[j] = rng.gen() * DEGREE_TO_RADIAN;
+//     }
+//   }
+//   for (size_t j{}; j < particles.size(); ++j) {
+//     auto &p = particles[j];
+//     float angle_rad = angles[j % angles.size()];
+//     p.x += cosine(angle_rad) * p.velocity;
+//     p.y += sine(angle_rad) * p.velocity;
+//   }
+// }
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bench1           7.31 ms         7.31 ms           97
+
+// with array or generators
+// std::array<RNG, 4> rngs{RNG(seed), RNG(seed), RNG(seed), RNG(seed)};
+// for (int i = 0; i < STEPS; i++) {
+//   for (size_t j{}; j < particles.size(); ++j) {
+//     auto &p = particles[j];
+//     float angle_rad = rngs[j % 4].gen() * DEGREE_TO_RADIAN;
+//     p.x += cosine(angle_rad) * p.velocity;
+//     p.y += sine(angle_rad) * p.velocity;
+//   }
+// }
+// -----------------------------------------------------
+// Benchmark           Time             CPU   Iterations
+// -----------------------------------------------------
+// bench1           8.39 ms         8.39 ms           83
+
 
 // The number of motion simulation steps.
 constexpr uint32_t STEPS = 10000;
@@ -21,7 +63,8 @@ std::vector<Particle> initParticles();
 // https://www.javamex.com/tutorials/random_numbers/xorshift.shtml
 struct XorShift32 {
   uint32_t val;
-  XorShift32 (uint32_t seed) : val(seed) {}
+  XorShift32(uint32_t seed) : val(seed) {}
+
 public:
   uint32_t gen() {
     val ^= (val << 13);
@@ -37,13 +80,11 @@ constexpr float PI_F = 3.14159265358979f;
 // Approximate sine and cosine functions
 // https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b
 static float sine(float x) {
-    const float B = 4 / PI_F;
-    const float C = -4/( PI_F * PI_F);
-    return B * x + C * x * std::abs(x);
+  const float B = 4 / PI_F;
+  const float C = -4 / (PI_F * PI_F);
+  return B * x + C * x * std::abs(x);
 }
-static float cosine(float x) {
-    return sine(x + (PI_F / 2));
-}
+static float cosine(float x) { return sine(x + (PI_F / 2)); }
 
 // A constant to convert from degrees to radians.
 // It maps the random number from [0;UINT32_MAX) to [0;2*pi).
@@ -55,12 +96,19 @@ constexpr float DEGREE_TO_RADIAN = (2 * PI_D) / UINT32_MAX;
 // in the corresponding direction.
 template <class RNG>
 void randomParticleMotion(std::vector<Particle> &particles, uint32_t seed) {
-  RNG rng(seed);  
-  for (int i = 0; i < STEPS; i++)
-    for (auto &p : particles) {
-      uint32_t angle = rng.gen();
-      float angle_rad = angle * DEGREE_TO_RADIAN;
+  RNG rng(seed);
+  std::array<float, 4> angles;
+  for (int i = 0; i < STEPS; i++) {
+    if (i % angles.size() == 0) {
+      for (size_t j{}; j < angles.size(); ++j) {
+        angles[j] = rng.gen() * DEGREE_TO_RADIAN;
+      }
+    }
+    for (size_t j{}; j < particles.size(); ++j) {
+      auto &p = particles[j];
+      float angle_rad = angles[j % angles.size()];
       p.x += cosine(angle_rad) * p.velocity;
       p.y += sine(angle_rad) * p.velocity;
     }
+  }
 }
